@@ -52,7 +52,7 @@
         <!-- Search Section -->
         <div class="container search-section">
             <h2 class="text-center mb-4">Search Recipes by Ingredients</h2>
-            <form method="GET" action="" class="d-flex justify-content-center">
+            <form id="search-form" class="d-flex justify-content-center">
                 <div class="mb-3 w-75">
                     <label for="ingredients" class="form-label">Enter ingredients (comma-separated):</label>
                     <input type="text" id="ingredients" name="ingredients" class="form-control" placeholder="e.g., chicken, tomatoes, basil" required>
@@ -62,31 +62,14 @@
         </div>
 
         <!-- Recipe Results Section -->
-        <div class="container">
-            <?php if (isset($recipes) && !empty($recipes)): ?>
-                <h3 class="my-4">Recipes:</h3>
-                <div class="row">
-                    <?php foreach ($recipes as $recipe): ?>
-                        <div class="col-md-4">
-                            <div class="recipe-card">
-                                <h4 class="text-center"><?php echo htmlspecialchars($recipe['title']); ?></h4>
-                                <img src="<?php echo htmlspecialchars($recipe['image']); ?>" alt="Recipe Image" class="img-fluid">
-                                <p><strong>Used Ingredients:</strong> <?php echo count($recipe['usedIngredients']); ?></p>
-                                <p><strong>Missed Ingredients:</strong> <?php echo count($recipe['missedIngredients']); ?></p>
-                                <a href="https://spoonacular.com/recipes/<?php echo urlencode($recipe['title']); ?>-<?php echo $recipe['id']; ?>" target="_blank" class="btn btn-outline-primary btn-sm d-block mt-3">View Full Recipe</a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php elseif (isset($ingredients)): ?>
-                <p class="text-danger text-center">No recipes found. Try different ingredients.</p>
-            <?php endif; ?>
+        <div class="container" id="recipe-results">
+            <!-- Results will be injected here via JavaScript -->
         </div>
     </div>
 
     <!-- Footer Section -->
     <footer>
-        <p>&copy; <?php echo date("Y"); ?> Recipe Finder. All rights reserved.</p>
+        <p>&copy; <span id="year"></span> Recipe Finder. All rights reserved.</p>
         <div>
             <a href="#">About Us</a> | <a href="#">Contact</a> | <a href="#">Privacy Policy</a>
         </div>
@@ -95,8 +78,13 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-    document.querySelector('form').addEventListener('submit', function(event) {
+    // Set current year in the footer
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Handle form submission
+    document.getElementById('search-form').addEventListener('submit', function(event) {
         event.preventDefault();
+        
         const ingredients = document.getElementById('ingredients').value;
         const apiKey = 'e1aca5950c474d49b9e2880b7d24a376';
         const apiUrl = `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${encodeURIComponent(ingredients)}&number=5&apiKey=${apiKey}`;
@@ -105,27 +93,34 @@
             .then(response => response.json())
             .then(data => {
                 let recipesHtml = '';
-                data.forEach(recipe => {
-                    recipesHtml += `
-                        <div class="col-md-4">
-                            <div class="recipe-card">
-                                <h4 class="text-center">${recipe.title}</h4>
-                                <img src="${recipe.image}" alt="Recipe Image" class="img-fluid">
-                                <p><strong>Used Ingredients:</strong> ${recipe.usedIngredients.length}</p>
-                                <p><strong>Missed Ingredients:</strong> ${recipe.missedIngredients.length}</p>
-                                <a href="https://spoonacular.com/recipes/${encodeURIComponent(recipe.title)}-${recipe.id}" target="_blank" class="btn btn-outline-primary btn-sm d-block mt-3">View Full Recipe</a>
+                if (data.length > 0) {
+                    data.forEach(recipe => {
+                        recipesHtml += `
+                            <div class="col-md-4">
+                                <div class="recipe-card">
+                                    <h4 class="text-center">${recipe.title}</h4>
+                                    <img src="${recipe.image}" alt="Recipe Image" class="img-fluid">
+                                    <p><strong>Used Ingredients:</strong> ${recipe.usedIngredients.length}</p>
+                                    <p><strong>Missed Ingredients:</strong> ${recipe.missedIngredients.length}</p>
+                                    <a href="https://spoonacular.com/recipes/${encodeURIComponent(recipe.title)}-${recipe.id}" target="_blank" class="btn btn-outline-primary btn-sm d-block mt-3">View Full Recipe</a>
+                                </div>
                             </div>
-                        </div>
+                        `;
+                    });
+                    document.getElementById('recipe-results').innerHTML = `
+                        <h3 class="my-4">Recipes:</h3>
+                        <div class="row">${recipesHtml}</div>
                     `;
-                });
-                document.querySelector('.row').innerHTML = recipesHtml;
+                } else {
+                    document.getElementById('recipe-results').innerHTML = `<p class="text-danger text-center">No recipes found. Try different ingredients.</p>`;
+                }
             })
             .catch(error => {
                 console.error('Error fetching recipes:', error);
                 alert('Failed to fetch recipes. Please try again later.');
             });
     });
-</script>
+    </script>
 
 </body>
 </html>
